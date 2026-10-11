@@ -1,0 +1,11 @@
+# 官方 gold rc 逐行照抄（/vendor/etc/init/vendor.samsung.hardware.health-service.rc），
+# 仅追加 seclabel：本盘 vendor 策略是 lineage 基座，没有 init → hal_health_default 的
+# 域转换规则，故直接指定 CDH 值守域（内核 CONFIG_CDH_PIONEER_PERMISSIVE 放行）。
+# 真机 charger 模式服务不启用（云机无充电模式）。
+service vendor.health-samsung /vendor/bin/hw/vendor.samsung.hardware.health-service
+    class hal
+    user system
+    group system
+    capabilities WAKE_ALARM BLOCK_SUSPEND
+    file /dev/kmsg w
+    seclabel u:r:pioneer:s0

@@ -1,0 +1,10 @@
+<!-- 官方 gold 片段原样：声明 AIDL health v3 的 IHealth/default。
+     ISehHealth 不在 VINTF 里声明——它以 binder extension 挂在同一个 IHealth binder 上
+     （gold 二进制里的 AIBinder_setExtension(healthBinder, sehHealth)），无独立实例名。 -->
+<manifest version="8.0" type="device">
+    <hal format="aidl">
+        <name>android.hardware.health</name>
+        <version>3</version>
+        <fqname>IHealth/default</fqname>
+    </hal>
+</manifest>

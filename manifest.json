@@ -1,0 +1,28 @@
+{
+  "manifest": {
+    "schema": 2,
+    "purpose": "声明 roms/ 下支持的固件与关键镜像。build 条目为构建数据源：main.py --build-id 选中后导出 CDH_* 环境变量驱动各阶段脚本；文件缺失或解析失败时脚本优雅降级为内置默认值。"
+  },
+  "device": {
+    "codename": "SM-S9380",
+    "name": "Samsung Galaxy S25 Ultra (CHC)",
+    "board": "sun",
+    "soc": "Qualcomm Snapdragon 8 Elite (SM8750)"
+  },
+  "build": [
+    {
+      "build-id": "SM-S9380_S9380ZCSDCZH1_CHC",
+      "android-version": "16.0.0",
+      "version": "s9380zcsdczh1",
+      "fus-version": "S9380ZCSDCZH1/S9380CHCDCZH1/S9380ZCSDCZH1/S9380ZCSDCZH1",
+      "factory-enc4": "SM-S9380_3_20260813083211_652iw49crl_fac.zip.enc4",
+      "factory-zip": "SM-S9380_3_20260813083211_652iw49crl_fac.zip",
+      "factory-dir": "S9380ZCSDCZH1_CHC",
+      "enc4-container": "aes-128-ecb-pkcs7",
+      "enc4-key-hex": "e217b1cc6854f3e6e3d2c6eb663bc18c",
+      "lineage-zip": "UTM-VM-lineage-23.2-20260922-UNOFFICIAL-virtio_arm64only.zip",
+      "lineage-dir": "lineage-23",
+      "lineage-version": "lineage-23.2"
+    }
+  ]
+}

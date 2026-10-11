@@ -1,0 +1,17 @@
+# CDH sm-s9380-16：software-only SEH KeyMint 扩展服务（pioneer 值守域）。
+#
+# 三星 keystore2 启动期无条件按裸名 find ISehKeyMintExtension，取不到即 panic
+# → keystore 服务起不来 → boot 卡死（详见 src/sehkeymint_ext.c 头注释）。本服务补上
+# 该裸名服务。lineage 基座没有 init → hal_keymint_default 的换域规则，故落 CDH 值守域
+# pioneer（内核 CONFIG_CDH_PIONEER_PERMISSIVE 放行 addService 等主体判定）。
+#
+# class early_hal（非 hal）：实测 instance 29（2026-10-11）keystore2 在 12.6s 起、
+# 13.3s 即 getRotStr 取扩展，而 `class_start hal` 直到 ~107s 才跑（本 ROM 把 hal 类
+# 推迟到 early-boot 阶段），导致 keystore2 首个实例在扩展注册前于 22s SIGABRT 一次
+# （重启后的实例等到 107s 才连上）。puresoft keymint 用 early_hal、12.7s 即起，故本
+# 服务同用 early_hal，与 keymint 同步拉起，让扩展在 keystore2 首次 find 前就位。
+service vendor.sehkeymint /vendor/bin/hw/vendor.samsung.hardware.sehkeymint-service
+    class early_hal
+    user root
+    group root
+    seclabel u:r:pioneer:s0

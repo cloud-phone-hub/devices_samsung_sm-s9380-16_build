@@ -1,0 +1,114 @@
+import /vendor/etc/init/hw/init.low_performance.rc
+
+# Block devices
+on early-fs
+    symlink /dev/block/by-name/BIOS /dev/block/by-name/BIOS_a
+    symlink /dev/block/by-name/BIOS /dev/block/by-name/BIOS_b
+    symlink /dev/block/by-name/EFI /dev/block/by-name/EFI_a
+    symlink /dev/block/by-name/EFI /dev/block/by-name/EFI_b
+
+# Boot manager
+service vendor.grub-editenv-set-android_theme /vendor/bin/grub-editenv /mnt/vendor/persist/grubenv set android_theme=${persist.sys.theme}
+    user system
+    group system
+    disabled
+    oneshot
+
+on property:persist.sys.theme=*
+    start vendor.grub-editenv-set-android_theme
+
+# Display
+on early-init
+    setprop ro.sf.lcd_density ${ro.boot.lcd_density:-160}
+
+# CSC 身份：真机由 EEC/bootloader 注入 ro.csc.*，QEMU virt 直启不跑 EEC 故全空。
+# services.jar 的 KnoxGuardSeService（SystemServer 无条件启动）在 BOOT_COMPLETED 时
+# 走 SystemIntentProcessor.handleBootCompleted：kgclient 包在 CHC 固件本就不存在且
+# 无法用平台密钥签名 → checkKGClientIntegrity 必为 false；此时唯一决定锁与不锁的
+# 门是 Utils.isChinaDevice()（读 ro.csc.country_code，忽略大小写等于 "China"）。
+# country_code 为空 → 非中国 → lockSeDevice → RemoteLock(2003) 锁屏 + block_usb_lock
+# 掉 adb；为 "China" → 未 enrolled（state=Error）时各分支均 return 不加锁。
+# 恢复真实国行身份即消除锁，非逻辑 hack。
+#
+# 用 pioneer 域 exec 而非 init 内建：ro.csc.* 标签为 csc_prop，官方 gold vendor 策略
+# 只授 radio/system_server/zygote/scs/system_app 写它（实测无 init → init 内建 setprop
+# 报 "SELinux permission check failed"）；pioneer 为内核 permissive-as-subject，property
+# service 的 SELinux 判定对 permissive 主体放行（实测 adb(pioneer) 手敲 setprop 成功写
+# csc_prop）。post-fs-data 早于 system_server 的 BOOT_COMPLETED（读该属性），且 /system 已挂载。
+#
+# 两个实测坑（务必避）：
+#   * init 会对其命令行里的 `$`/`${}` 做「属性展开」，**连单引号内也不放过**——曾写
+#     exec sh -c 'PATH=$PATH; setprop …' 被 init 解析成引用属性 PATH; 直接
+#     `failed: using deprecated syntax for specifying property 'PATH;'`，整条命令根本没跑；
+#   * exec sh -c 'setprop …'（裸命令、无 $）虽能起进程、切到 pioneer，却在 15ms 内 exit 1、
+#     三属性一个没落地（boot 期 sh 环境的 PATH/execve 时序不可靠）。
+# 故不走 sh、不用任何 `$`：直接用绝对路径 `/system/bin/setprop` 起三个 exec，参数里无空格
+# 无需引号，彻底绕开 init 属性展开与 sh 依赖。
+on post-fs-data
+    exec u:r:pioneer:s0 root root -- /system/bin/setprop ro.csc.country_code China
+    exec u:r:pioneer:s0 root root -- /system/bin/setprop ro.csc.countryiso_code CN
+    exec u:r:pioneer:s0 root root -- /system/bin/setprop ro.csc.sales_code CHC
+
+# DLKM Loader
+service vendor.dlkm_loader /vendor/bin/dlkm_loader
+    class main
+    user root
+    group root system
+    disabled
+    oneshot
+
+# 云机（virtio 直启）无真机 keymint/secure_env 门控：note13 在此曾以 post-fs 内
+# /dev/hvc3 就绪门控启动 vendor.keymint-default（CDH 移植的 Remote KeyMint），
+# popsicle 暂无该 HAL 移植件，故不设等待与启动；后续 vendor/source 补上
+# keymint 移植时再按同样门控恢复。
+on post-fs
+    write /sys/module/firmware_class/parameters/path /vendor/firmware_mnt/
+    start vendor.dlkm_loader
+
+# Graphics
+on property:ro.vendor.graphics=mesa
+    setprop ro.hardware.egl mesa
+
+on property:ro.vendor.graphics=mesa_swrast
+    setprop ro.hardware.egl mesa
+    setprop ro.hardware.vulkan lvp
+    setprop ro.opengles.version 196610
+    setprop ro.surface_flinger.native_window_buffers_format 5
+    setprop vendor.mesa.android.no.kms.swrast true
+    setprop vendor.mesa.libgl.always.software true
+
+on property:ro.vendor.graphics=swiftshader
+    setprop ro.cpuvulkan.version 4202496
+    setprop ro.hardware.egl angle
+    setprop ro.hardware.vulkan pastel
+    setprop ro.opengles.version 196609
+    setprop ro.surface_flinger.native_window_buffers_format 5
+
+on early-boot && property:ro.boot.hwui_renderer=*
+    setprop debug.hwui.renderer ${ro.boot.hwui_renderer}
+
+on early-boot && property:ro.vendor.graphics.gpu=vkms
+    setprop ro.vendor.graphics ${ro.boot.graphics:-swiftshader}
+
+# Suspend blocker
+service suspend_blocker /vendor/bin/suspend_blocker
+    class early_hal # Start together with system_suspend HAL
+    group system
+    user root
+
+# VirtWifi
+service setup_wifi /vendor/bin/setup_wifi --interface=${ro.vendor.virtwifi.port}
+    override
+    disabled
+    oneshot
+    user root
+    group root
+
+on post-fs-data && property:ro.boot.wifi_impl=virt_wifi
+    start setup_wifi
+
+# Wi-Fi
+on early-boot
+    mkdir /data/vendor/wifi 0770 wifi wifi
+    mkdir /data/vendor/wifi/wpa 0770 wifi wifi
+    mkdir /data/vendor/wifi/wpa/sockets 0770 wifi wifi

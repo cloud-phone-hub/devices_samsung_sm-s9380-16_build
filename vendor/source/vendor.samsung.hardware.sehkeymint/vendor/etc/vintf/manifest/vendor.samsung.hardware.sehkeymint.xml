@@ -1,0 +1,11 @@
+<!-- CDH sm-s9380-16：声明自研 software-only SEH KeyMint 扩展服务。
+     设备侧 provided HAL；keystore2 兜底路径按裸名 find（服务在 src/sehkeymint_ext.c 里
+     同时注册裸名与 /default）。此处按 AIDL 约定声明 ISehKeyMintExtension/default，
+     使 servicemanager 的 VINTF 声明检查对 /default 名成立。 -->
+<manifest version="8.0" type="device">
+    <hal format="aidl">
+        <name>vendor.samsung.hardware.keymint</name>
+        <version>3</version>
+        <fqname>ISehKeyMintExtension/default</fqname>
+    </hal>
+</manifest>
