@@ -9,11 +9,26 @@
     "board": "sun",
     "soc": "Qualcomm Snapdragon 8 Elite (SM8750)"
   },
+  "runtime": {
+    "name": "Samsung Galaxy S25 Ultra (CHC)",
+    "brand": "SM-S9380",
+    "width": 1440,
+    "height": 3120,
+    "memory-mb": 8192,
+    "min-memory-mb": 8192,
+    "smp": 8,
+    "host-hvc-adbkey": "hvc2",
+    "host-hvc-bluetooth": "hvc5",
+    "host-hvc-daemon": "hvc7",
+    "host-hvc-wifi": "hvc9",
+    "host-hvc-wifi-data": "hvc10"
+  },
   "build": [
     {
       "build-id": "SM-S9380_S9380ZCSDCZH1_CHC",
       "android-version": "16.0.0",
       "version": "s9380zcsdczh1",
+      "region": "cn",
       "fus-version": "S9380ZCSDCZH1/S9380CHCDCZH1/S9380ZCSDCZH1/S9380ZCSDCZH1",
       "factory-enc4": "SM-S9380_3_20260813083211_652iw49crl_fac.zip.enc4",
       "factory-zip": "SM-S9380_3_20260813083211_652iw49crl_fac.zip",
